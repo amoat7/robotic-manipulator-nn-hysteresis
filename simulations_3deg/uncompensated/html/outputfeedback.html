@@ -1,0 +1,297 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>outputfeedback</title><meta name="generator" content="MATLAB 8.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2015-11-18"><meta name="DC.source" content="outputfeedback.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">desired trajectory</a></li><li><a href="#7">computation of the tracking errors</a></li><li><a href="#8">computation of the tracking errors</a></li><li><a href="#9">computation of mass inertia matrix</a></li><li><a href="#10">computation of C matrix</a></li><li><a href="#11">computation of G matrix</a></li><li><a href="#12">nn parameters</a></li><li><a href="#13">updating laws</a></li><li><a href="#14">robot arm dynamics</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> [xdot]= outputfeedback(t,x)
+</pre><h2>desired trajectory<a name="2"></a></h2><pre class="codeinput">a1=0.1; a2=0.1; a3=0.1; per=2; freq=pi/per; <span class="comment">%amplitudes and period</span>
+qd(1)=a1*cos(freq*t);
+qd(2)=a1*sin(freq*t);
+qd(3)=a3*cos(freq*t)+a1;
+dqd(1)=-a1*freq*sin(freq*t);
+dqd(3)=-a3*freq*sin(freq*t);
+dqd(2)=a1*freq*cos(freq*t);
+ddqd(1)=-a1*(freq^2)*cos(freq*t);
+ddqd(2)=-a1*(freq^2)*sin(freq*t);
+ddqd(3)=-a3*(freq^2)*cos(freq*t);
+</pre><pre class="codeoutput error">Error using outputfeedback (line 4)
+Not enough input arguments.
+</pre><pre class="codeinput">W1=(x(10:25));
+W2=(x(26:41));
+W3=(x(42:57));
+W=[W1 W2 W3];
+B1=(x(58:60));
+B2=(x(61:63));
+B3=x(64:66);
+B=[B1 B2 B3];
+</pre><pre class="codeinput">ep=0.005;
+lamd1=50;
+pi1=[x(67) x(68) x(69)];
+pi2=[x(70) x(71) x(72)];
+phit=x(73:75);
+dpi1=pi2/ep;
+dpi2=(-lamd1*pi2-pi1+[x(1) x(2) x(3)])/ep;
+</pre><pre class="codeinput">m1=1; m2=0.85; m3=1; l1=0.3; l2=0.4; l3=0.5; <span class="comment">%mass of robot arms and length of links</span>
+k2=diag([20 20 20]); <span class="comment">%controller gains</span>
+k1=diag([5 5 5]);
+</pre><h2>computation of the tracking errors<a name="7"></a></h2><h2>computation of the tracking errors<a name="8"></a></h2><pre class="codeinput">e=[pi1(1) pi1(2) pi1(3)]-qd;
+alp1=-k1*e'+dqd';
+e2=[dpi1(1) dpi1(2) dpi1(3)]-alp1';  e=e'; e2=e2';
+dalp1=-k1*([dpi1(1) dpi1(2) dpi1(3)]'-dqd')+ddqd';
+</pre><h2>computation of mass inertia matrix<a name="9"></a></h2><pre class="codeinput">i1=0.25*m1*l1^2;
+i2=0.25*m2*l2^2;
+m11= m3*x(3)^2*(sin(x(2)))^2+m3*l1^2+m2*l1^2+i1;
+m12= m3*x(3)*l1*cos(x(2));
+m13= m3*l1*sin(x(2));
+m21= m3*x(3)*l1*cos(x(2));
+m22= m3*x(3)^2+i2;
+m23= 0;
+m31= m3*l1*sin(x(2));
+m32= 0;
+m33 = m3;
+M = [m11 m12 m13; m21 m22 m23; m31 m32 m33];
+</pre><h2>computation of C matrix<a name="10"></a></h2><pre class="codeinput">c11=m3*x(3)^2*sin(x(2))*cos(x(2))*x(5)+m3*x(3)*sin(x(2))^2*x(5);
+c12= m3*x(3)^2*sin(x(2))*cos(x(2))*x(4)-m3*l1*x(3)*sin(x(2))*(x(5)+x(6));
+c13= m3*x(3)*sin(x(2))^2*x(4)-m3*l1*x(3)*sin(x(2))*x(5);
+c21= -m3*x(3)^2*sin(x(2))*cos(x(2))*x(4);
+c22= m3*x(3)*x(6);
+c23= m3*l1*cos(x(2))*x(4)-m3*x(3)*x(5);
+c31= -m3*x(3)*sin(x(2))^2*x(4)+m3*l1*cos(x(2))*x(5);
+c32= m3*x(3)*x(5)+m3*l1*cos(x(2))*x(5);
+c33= 0;
+C=[c11 c12 c13; c21 c22 c23; c31 c32 c33]*[x(4);x(5); x(6)];
+</pre><h2>computation of G matrix<a name="11"></a></h2><pre class="codeinput">g1=0;
+g2=-m3*9.8*x(3)*cos(x(2));
+g3= -m3*9.8*sin(x(2));
+G = [g1;g2;g3];
+</pre><h2>nn parameters<a name="12"></a></h2><pre class="codeinput">b=0.1;
+sigma_w = 0.01;
+sigma_b = 0.01;
+gam_w = 50*eye(16);
+gam_b = 50*eye(3);
+<span class="comment">%</span>
+variance = 50;
+ Node = 2^4;
+k = 1;
+Mu=zeros(4,16);
+<span class="keyword">for</span> i1 = 1*(-1:2:1)
+    <span class="keyword">for</span> i2 = 1*(-1:2:1)
+        <span class="keyword">for</span> i3 = 1*(-1:2:1)
+            <span class="keyword">for</span> i4 = 1*(-1:2:1)
+                Mu(:,k) = [i1,i2,i3,i4];
+                k = k+1;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+ Z=[pi1' pi2' alp1 dalp1]';
+Zin=Z(:,1)+Z(:,2)+Z(:,3);
+<span class="keyword">for</span> i =1:Node
+    S(i,1)=exp(-(Zin-Mu(:,i))'*(Zin-Mu(:,i))/variance);
+<span class="keyword">end</span>
+
+torque=-e-(k2*e2)-(W'*S);
+</pre><h2>updating laws<a name="13"></a></h2><pre class="codeinput"> dW = gam_w*( S*e2' - sigma_w*W );
+ dB = gam_b*( tanh(e2/b)*e2' -sigma_b*B );
+<span class="keyword">if</span> norm([x(1) x(2) x(3)])&gt;=0
+    sgn = 1;
+<span class="keyword">else</span>
+    sgn=-1;
+<span class="keyword">end</span>
+F=diag([2 2 2])*[x(1) x(2) x(3)]'+1.5*sgn;
+</pre><h2>robot arm dynamics<a name="14"></a></h2><pre class="codeinput">dphit(1)=1*abs(torque(1)-x(7))*(3.15*torque(1)-phit(1))+0.35*(torque(1)-x(7));
+dphit(2)=1*abs(torque(2)-x(8))*(3.15*torque(2)-phit(2))+0.35*(torque(2)-x(8));
+dphit(3)=1*abs(torque(3)-x(9))*(3.15*torque(3)-phit(3))+0.35*(torque(3)-x(9));
+qdotdot= (M)\(phit-G-C-F);
+xdot=[x(4);x(5);x(6);qdotdot(1);qdotdot(2);qdotdot(3)
+    (torque(1)-x(7));<span class="comment">%%ode will not integrate this, output only</span>
+    (torque(2)-x(8));<span class="comment">%%ode will not integrate this, ouput only</span>
+     (torque(3)-x(9));
+    dW(:,1);dW(:,2);dW(:,3); dB(:,1);dB(:,2); dB(:,3);dpi1(1);dpi1(2);dpi1(3);dpi2(1);dpi2(2);dpi2(3);dphit(1);dphit(2);dphit(3)
+    ];
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [xdot]= outputfeedback(t,x)
+%% desired trajectory
+a1=0.1; a2=0.1; a3=0.1; per=2; freq=pi/per; %amplitudes and period
+qd(1)=a1*cos(freq*t);  
+qd(2)=a1*sin(freq*t);
+qd(3)=a3*cos(freq*t)+a1;
+dqd(1)=-a1*freq*sin(freq*t); 
+dqd(3)=-a3*freq*sin(freq*t);
+dqd(2)=a1*freq*cos(freq*t); 
+ddqd(1)=-a1*(freq^2)*cos(freq*t);
+ddqd(2)=-a1*(freq^2)*sin(freq*t);
+ddqd(3)=-a3*(freq^2)*cos(freq*t);
+%%
+%% 
+W1=(x(10:25)); 
+W2=(x(26:41)); 
+W3=(x(42:57));
+W=[W1 W2 W3];
+B1=(x(58:60));
+B2=(x(61:63));
+B3=x(64:66);
+B=[B1 B2 B3];
+
+%%
+ep=0.005;
+lamd1=50;
+pi1=[x(67) x(68) x(69)];
+pi2=[x(70) x(71) x(72)];
+phit=x(73:75);
+dpi1=pi2/ep;
+dpi2=(-lamd1*pi2-pi1+[x(1) x(2) x(3)])/ep;
+%% 
+m1=1; m2=0.85; m3=1; l1=0.3; l2=0.4; l3=0.5; %mass of robot arms and length of links
+k2=diag([20 20 20]); %controller gains
+k1=diag([5 5 5]);
+%% computation of the tracking errors
+%% computation of the tracking errors
+e=[pi1(1) pi1(2) pi1(3)]-qd; 
+alp1=-k1*e'+dqd'; 
+e2=[dpi1(1) dpi1(2) dpi1(3)]-alp1';  e=e'; e2=e2';
+dalp1=-k1*([dpi1(1) dpi1(2) dpi1(3)]'-dqd')+ddqd';
+%% computation of mass inertia matrix
+i1=0.25*m1*l1^2;
+i2=0.25*m2*l2^2;
+m11= m3*x(3)^2*(sin(x(2)))^2+m3*l1^2+m2*l1^2+i1;
+m12= m3*x(3)*l1*cos(x(2));
+m13= m3*l1*sin(x(2));
+m21= m3*x(3)*l1*cos(x(2));
+m22= m3*x(3)^2+i2;
+m23= 0;
+m31= m3*l1*sin(x(2));
+m32= 0;
+m33 = m3;
+M = [m11 m12 m13; m21 m22 m23; m31 m32 m33];   
+%% computation of C matrix
+c11=m3*x(3)^2*sin(x(2))*cos(x(2))*x(5)+m3*x(3)*sin(x(2))^2*x(5);
+c12= m3*x(3)^2*sin(x(2))*cos(x(2))*x(4)-m3*l1*x(3)*sin(x(2))*(x(5)+x(6));
+c13= m3*x(3)*sin(x(2))^2*x(4)-m3*l1*x(3)*sin(x(2))*x(5);
+c21= -m3*x(3)^2*sin(x(2))*cos(x(2))*x(4);
+c22= m3*x(3)*x(6);
+c23= m3*l1*cos(x(2))*x(4)-m3*x(3)*x(5);
+c31= -m3*x(3)*sin(x(2))^2*x(4)+m3*l1*cos(x(2))*x(5);
+c32= m3*x(3)*x(5)+m3*l1*cos(x(2))*x(5);
+c33= 0;
+C=[c11 c12 c13; c21 c22 c23; c31 c32 c33]*[x(4);x(5); x(6)];
+ %% computation of G matrix
+g1=0;
+g2=-m3*9.8*x(3)*cos(x(2));
+g3= -m3*9.8*sin(x(2));
+G = [g1;g2;g3];
+%%  nn parameters
+b=0.1;
+sigma_w = 0.01;
+sigma_b = 0.01;
+gam_w = 50*eye(16);
+gam_b = 50*eye(3);
+% 
+variance = 50;
+ Node = 2^4;
+k = 1;
+Mu=zeros(4,16);
+for i1 = 1*(-1:2:1)
+    for i2 = 1*(-1:2:1)
+        for i3 = 1*(-1:2:1)
+            for i4 = 1*(-1:2:1)
+                Mu(:,k) = [i1,i2,i3,i4];
+                k = k+1;
+            end
+        end
+    end
+end
+ Z=[pi1' pi2' alp1 dalp1]';
+Zin=Z(:,1)+Z(:,2)+Z(:,3);
+for i =1:Node
+    S(i,1)=exp(-(Zin-Mu(:,i))'*(Zin-Mu(:,i))/variance);
+end
+
+torque=-e-(k2*e2)-(W'*S);
+%% updating laws
+ dW = gam_w*( S*e2' - sigma_w*W );
+ dB = gam_b*( tanh(e2/b)*e2' -sigma_b*B );
+if norm([x(1) x(2) x(3)])>=0
+    sgn = 1;
+else
+    sgn=-1;
+end
+F=diag([2 2 2])*[x(1) x(2) x(3)]'+1.5*sgn;
+%% robot arm dynamics
+dphit(1)=1*abs(torque(1)-x(7))*(3.15*torque(1)-phit(1))+0.35*(torque(1)-x(7)); 
+dphit(2)=1*abs(torque(2)-x(8))*(3.15*torque(2)-phit(2))+0.35*(torque(2)-x(8)); 
+dphit(3)=1*abs(torque(3)-x(9))*(3.15*torque(3)-phit(3))+0.35*(torque(3)-x(9)); 
+qdotdot= (M)\(phit-G-C-F);
+xdot=[x(4);x(5);x(6);qdotdot(1);qdotdot(2);qdotdot(3)
+    (torque(1)-x(7));%%ode will not integrate this, output only
+    (torque(2)-x(8));%%ode will not integrate this, ouput only
+     (torque(3)-x(9));
+    dW(:,1);dW(:,2);dW(:,3); dB(:,1);dB(:,2); dB(:,3);dpi1(1);dpi1(2);dpi1(3);dpi2(1);dpi2(2);dpi2(3);dphit(1);dphit(2);dphit(3)
+    ];
+
+##### SOURCE END #####
+--></body></html>
